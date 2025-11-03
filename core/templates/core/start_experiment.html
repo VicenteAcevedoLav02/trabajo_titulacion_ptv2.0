@@ -1,0 +1,64 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Start Experiment - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col-md-8 offset-md-2">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'project_detail_view' project.id %}">{{ project.name }}</a></li>
+                <li class="breadcrumb-item active">Start Experiment</li>
+            </ol>
+        </nav>
+        
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h3><i class="fas fa-play-circle"></i> Start New Experiment</h3>
+                <p class="mb-0">Project: <strong>{{ project.name }}</strong></p>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> 
+                    <strong>Test Mode:</strong> This is a test experiment that simulates MyPTV processing for 15 seconds.
+                </div>
+                
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Experiment Name *</label>
+                        <input type="text" class="form-control" id="name" name="name" 
+                               placeholder="e.g., Bubble Test Config 01" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"
+                                  placeholder="Observations, experiment setup, etc."></textarea>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h5><i class="fas fa-cog"></i> Automatic Configuration (Test Mode)</h5>
+                        <ul class="mb-0">
+                            <li><strong>Calibration:</strong> test_calibration.cal</li>
+                            <li><strong>Parameters:</strong> Test configuration</li>
+                            <li><strong>Simulated duration:</strong> ~15 seconds</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a href="{% url 'project_detail_view' project.id %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-rocket"></i> Run Experiment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

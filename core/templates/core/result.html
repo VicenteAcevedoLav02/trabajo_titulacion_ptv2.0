@@ -1,0 +1,148 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Results - {{ experiment.name }}{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col-md-10 offset-md-1">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'project_detail' experiment.project.id %}">{{ experiment.project.name }}</a></li>
+                <li class="breadcrumb-item active">Results</li>
+            </ol>
+        </nav>
+        
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h2><i class="fas fa-chart-line"></i> Experiment Results</h2>
+            </div>
+            <div class="card-body">
+                <h4>{{ experiment.name }}</h4>
+                
+                {% if result %}
+                    <div class="alert alert-success mt-3">
+                        <h5><i class="fas fa-check-circle"></i> Processing Completed</h5>
+                        <p>The experiment was processed successfully.</p>
+                    </div>
+                    
+                    <!-- Experiment Information -->
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-info-circle"></i> Experiment Information</h5>
+                            <ul class="list-group">
+                                <li class="list-group-item">
+                                    <strong>Project:</strong> {{ experiment.project.name }}
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Execution Date:</strong> {{ experiment.creation_date|date:"d/m/Y H:i" }}
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Duration:</strong> 
+                                    {% if experiment.processing_duration %}
+                                        {{ experiment.processing_duration|floatformat:2 }} seconds
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Calibration File:</strong> 
+                                    <code>{{ experiment.calibration_file|truncatechars:50 }}</code>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-chart-bar"></i> Key Metrics</h5>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    {% if result.key_metrics %}
+                                        <div class="row text-center">
+                                            {% for key, value in result.key_metrics.items %}
+                                            <div class="col-md-6 mb-3">
+                                                <h2 class="text-primary">{{ value }}</h2>
+                                                <p class="text-muted">{{ key|title|replace:"_":" " }}</p>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <p class="text-muted">No metrics available</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Download Section -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card border-primary">
+                                <div class="card-header bg-primary text-white">
+                                    <h5><i class="fas fa-download"></i> Download Results</h5>
+                                </div>
+                                <div class="card-body text-center">
+                                    <p class="lead">Generated trajectory data file:</p>
+                                    <p><code>{{ result.txt_file_path }}</code></p>
+                                    
+                                    <a href="#" class="btn btn-primary btn-lg disabled" title="Download functionality available in production">
+                                        <i class="fas fa-file-download"></i> Download CSV File
+                                    </a>
+                                    
+                                    <p class="text-muted mt-3">
+                                        <small>
+                                            <i class="fas fa-info-circle"></i> 
+                                            In the production environment, this button will directly download the file.
+                                        </small>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Parameters Used -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-cogs"></i> Parameters Used</h5>
+                                </div>
+                                <div class="card-body">
+                                    <pre class="bg-light p-3"><code>{{ experiment.used_parameters|pprint }}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Notes -->
+                    {% if experiment.notes %}
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-sticky-note"></i> Experiment Notes</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>{{ experiment.notes }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        No results found for this experiment.
+                    </div>
+                {% endif %}
+                
+                <div class="mt-4">
+                    <a href="{% url 'project_detail' experiment.project.id %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Project
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,191 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Monitoring - {{ experiment.name }}{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col-md-10 offset-md-1">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'project_detail' experiment.project.id %}">
+                        {{ experiment.project.name }}
+                    </a>
+                </li>
+                <li class="breadcrumb-item active">Monitoring</li>
+            </ol>
+        </nav>
+        
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h2><i class="fas fa-eye"></i> Experiment Monitoring</h2>
+            </div>
+            <div class="card-body">
+                <h4>{{ experiment.name }}</h4>
+                <p class="text-muted">Experiment ID: {{ experiment.id }}</p>
+                
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-info-circle"></i> Information</h5>
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <strong>Project:</strong> {{ experiment.project.name }}
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Created On:</strong> {{ experiment.created_at|date:"d/m/Y H:i:s" }}
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Celery Task ID:</strong> 
+                                <code>{{ experiment.celery_task_id|default:"N/A" }}</code>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-tachometer-alt"></i> Real-Time Status</h5>
+                        <div class="card text-center" id="status-card">
+                            <div class="card-body">
+                                <h1 id="status-icon">
+                                    <i class="fas fa-spinner fa-spin text-warning"></i>
+                                </h1>
+                                <h3 id="status-text" class="mt-3">Loading...</h3>
+                                <p id="status-detail" class="text-muted"></p>
+                                
+                                <div id="progress-container" class="mt-3" style="display:none;">
+                                    <div class="progress">
+                                        <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                             role="progressbar" style="width: 0%">0%</div>
+                                    </div>
+                                    <p id="progress-text" class="mt-2 text-muted"></p>
+                                </div>
+                                
+                                <div id="error-container" class="alert alert-danger mt-3" style="display:none;">
+                                    <h5><i class="fas fa-exclamation-triangle"></i> Error</h5>
+                                    <p id="error-message"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <a href="{% url 'project_detail' experiment.project.id %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Project
+                    </a>
+                    <button id="btn-refresh" class="btn btn-primary" onclick="updateStatus()">
+                        <i class="fas fa-sync"></i> Refresh Manually
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+   const EXPERIMENT_ID = "{{ experiment.id|escapejs }}";
+    const API_URL = "{% url 'check_status' experiment.id %}";
+    let pollingInterval;
+    
+    // Function to update experiment status
+    async function updateStatus() {
+        try {
+            const response = await fetch(API_URL);
+            const data = await response.json();
+            
+            console.log('[POLLING] Status received:', data);
+            
+            // Update main status text
+            document.getElementById('status-text').textContent = data.status_display;
+            
+            // Update icon and color
+            const iconElement = document.getElementById('status-icon');
+            const statusCard = document.getElementById('status-card');
+            
+            if (data.status === 'PROCESSING') {
+                iconElement.innerHTML = '<i class="fas fa-spinner fa-spin text-warning"></i>';
+                statusCard.className = 'card text-center border-warning';
+                
+                // Show progress if present
+                if (data.progress) {
+                    const progressContainer = document.getElementById('progress-container');
+                    progressContainer.style.display = 'block';
+                    
+                    const percentage = Math.round((data.progress.current / data.progress.total) * 100);
+                    document.getElementById('progress-bar').style.width = percentage + '%';
+                    document.getElementById('progress-bar').textContent = percentage + '%';
+                    document.getElementById('progress-text').textContent = data.progress.status || '';
+                }
+                
+            } else if (data.status === 'COMPLETED') {
+                iconElement.innerHTML = '<i class="fas fa-check-circle text-success"></i>';
+                statusCard.className = 'card text-center border-success';
+                document.getElementById('status-detail').textContent = 'Processing successfully completed!';
+                
+                // Stop polling
+                clearInterval(pollingInterval);
+                
+                // Display results button
+                const detail = document.getElementById('status-detail');
+                detail.innerHTML = `
+                    <div class="alert alert-success mt-3">
+                        <h5><i class="fas fa-check-circle"></i> Processing Completed</h5>
+                        <p>The experiment was processed successfully.</p>
+                        <a href="{% url 'experiment_result' experiment.id %}" class="btn btn-success">
+                            <i class="fas fa-chart-line"></i> View Results
+                        </a>
+                    </div>
+                `;
+                
+                // Hide progress bar
+                document.getElementById('progress-container').style.display = 'none';
+                
+            } else if (data.status === 'ERROR') {
+                iconElement.innerHTML = '<i class="fas fa-exclamation-circle text-danger"></i>';
+                statusCard.className = 'card text-center border-danger';
+                
+                document.getElementById('error-container').style.display = 'block';
+                document.getElementById('error-message').textContent = data.error_message || 'Unknown error';
+                
+                clearInterval(pollingInterval);
+                
+            } else if (data.status === 'PENDING') {
+                iconElement.innerHTML = '<i class="fas fa-clock text-secondary"></i>';
+                statusCard.className = 'card text-center border-secondary';
+                document.getElementById('status-detail').textContent = 'Waiting in the processing queue...';
+            }
+            
+            // Celery state (debug info)
+            if (data.celery_state) {
+                const detailElement = document.getElementById('status-detail');
+                if (data.status === 'PROCESSING') {
+                    detailElement.innerHTML += `<br><small class="text-muted">Celery State: ${data.celery_state}</small>`;
+                }
+            }
+            
+        } catch (error) {
+            console.error('[POLLING ERROR]', error);
+            document.getElementById('status-text').textContent = 'Error while checking status';
+            document.getElementById('status-icon').innerHTML = '<i class="fas fa-exclamation-triangle text-danger"></i>';
+        }
+    }
+    
+    // Start polling when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('[POLLING] Automatic monitoring started...');
+        updateStatus();
+        pollingInterval = setInterval(updateStatus, 3000);
+        console.log('[POLLING] Interval set: every 3 seconds');
+    });
+    
+    // Stop polling when user leaves the page
+    window.addEventListener('beforeunload', function() {
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+            console.log('[POLLING] Interval stopped');
+        }
+    });
+</script>
+{% endblock %}
