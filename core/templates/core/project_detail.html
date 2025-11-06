@@ -80,11 +80,11 @@
                                         <i class="fas fa-chart-line"></i> View Results
                                     </a>
                                 {% elif exp.status == 'PROCESSING' or exp.status == 'PENDING' %}
-                                    <a href="{% url 'experiment_monitor' exp.id %}" class="btn btn-sm btn-info">
+                                    <a href="{% url 'experiment_monitoring' exp.id %}" class="btn btn-sm btn-info">
                                         <i class="fas fa-eye"></i> Monitor
                                     </a>
                                 {% else %}
-                                    <a href="{% url 'experiment_monitor' exp.id %}" class="btn btn-sm btn-secondary">
+                                    <a href="{% url 'experiment_monitoring' exp.id %}" class="btn btn-sm btn-secondary">
                                         <i class="fas fa-info-circle"></i> View Details
                                     </a>
                                 {% endif %}

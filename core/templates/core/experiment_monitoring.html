@@ -9,7 +9,7 @@
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'project_detail' experiment.project.id %}">
+                    <a href="{% url 'project_detail_view' experiment.project.id %}">
                         {{ experiment.project.name }}
                     </a>
                 </li>
@@ -70,7 +70,7 @@
                 </div>
                 
                 <div class="mt-4">
-                    <a href="{% url 'project_detail' experiment.project.id %}" class="btn btn-secondary">
+                    <a href="{% url 'project_detail_view' experiment.project.id %}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> Back to Project
                     </a>
                     <button id="btn-refresh" class="btn btn-primary" onclick="updateStatus()">
@@ -86,7 +86,7 @@
 {% block extra_js %}
 <script>
    const EXPERIMENT_ID = "{{ experiment.id|escapejs }}";
-    const API_URL = "{% url 'check_status' experiment.id %}";
+    const API_URL = "{% url 'get_experiment_status' experiment.id %}";
     let pollingInterval;
     
     // Function to update experiment status
@@ -98,7 +98,7 @@
             console.log('[POLLING] Status received:', data);
             
             // Update main status text
-            document.getElementById('status-text').textContent = data.status_display;
+            document.getElementById('status-text').textContent = data.state_display;
             
             // Update icon and color
             const iconElement = document.getElementById('status-icon');

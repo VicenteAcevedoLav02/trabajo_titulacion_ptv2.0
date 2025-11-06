@@ -24,7 +24,7 @@ def test_myptv_task(self, experiment_id):
         print(f"[CELERY] Experiment found: {experiment.name}")
         
         # 2. Update state and register start time
-        experiment.status = 'PROCESSING'
+        experiment.state = 'PROCESSING'
         experiment.processing_start_time = timezone.now()
         experiment.save()
         print(f"[CELERY] Status updated to PROCESSING")
@@ -63,7 +63,7 @@ def test_myptv_task(self, experiment_id):
         print(f"[CELERY] Result created: {result.result_file_path}")
         
         # 5. Mark experiment as COMPLETED
-        experiment.status = 'COMPLETED'
+        experiment.state = 'COMPLETED'
         experiment.processing_end_time = timezone.now()
         experiment.save()
         print(f"[CELERY] Experiment completed successfully")
@@ -87,7 +87,7 @@ def test_myptv_task(self, experiment_id):
         # Update experiment with error state
         try:
             experiment = Experiment.objects.get(id=experiment_id)
-            experiment.status = 'ERROR'
+            experiment.state = 'ERROR'
             experiment.error_message = error_msg
             experiment.processing_end_time = timezone.now()
             experiment.save()

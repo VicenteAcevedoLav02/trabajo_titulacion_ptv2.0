@@ -4,6 +4,8 @@ from django.views.decorators.http import require_http_methods
 from celery.result import AsyncResult
 from .models import Project, Experiment, Result
 from .tasks import test_myptv_task
+import json
+
 
 
 def index_view(request):
@@ -28,48 +30,49 @@ def project_detail_view(request, project_id):
         'experiments': experiments
     })
 
-
 def start_experiment_view(request, project_id):
     """
     View that starts a new test experiment.
     """
+    project = get_object_or_404(Project, id=project_id)
+
     if request.method == 'POST':
-        project = get_object_or_404(Project, id=project_id)
-        
+        # Convert used_parameters dict to JSON string
+        parameters_json = json.dumps({
+            'test_mode': True,
+            'threshold': 100,
+            'min_particle_size': 3
+        })
+
         # 1. Create the Experiment object in the database
         experiment = Experiment.objects.create(
             project=project,
             name=request.POST.get('name', f'Experiment {project.experiments.count() + 1}'),
-            status='PENDING',
-            calibration_file_path='C:/ptv_platform/calibrations/test_calibration.cal',
+            state='PENDING',  # <--- usa 'state' en vez de 'status'
+            calibration_file='C:/ptv_platform/calibrations/test_calibration.cal',  # <--- renombrado
             images_path='C:/ptv_platform/experiment_data/images/',
-            used_parameters={
-                'test_mode': True,
-                'threshold': 100,
-                'min_particle_size': 3
-            },
+            used_parameters=parameters_json,
             notes=request.POST.get('notes', '')
         )
-        
+
         print(f"[DJANGO] Experiment created: ID={experiment.id}, Name={experiment.name}")
-        
+
         # 2. Enqueue the Celery task
         task = test_myptv_task.delay(experiment.id)
-        
+
         print(f"[DJANGO] Task enqueued in Celery: Task ID={task.id}")
-        
-        # 3. Save the Celery task ID for monitoring
+
+        # 3. Save the Celery task ID for monitoring and update state
         experiment.celery_task_id = task.id
-        experiment.status = 'PROCESSING'
+        experiment.state = 'PROCESSING'
         experiment.save()
-        
+
         print(f"[DJANGO] Task ID saved in experiment")
-        
+
         # 4. Redirect to monitoring page
         return redirect('experiment_monitoring', experiment_id=experiment.id)
-    
+
     # If GET, show the creation form
-    project = get_object_or_404(Project, id=project_id)
     return render(request, 'core/start_experiment.html', {
         'project': project
     })
@@ -98,8 +101,8 @@ def get_experiment_status_view(request, experiment_id):
         data = {
             'experiment_id': experiment.id,
             'name': experiment.name,
-            'status': experiment.status,
-            'status_display': experiment.get_status_display(),
+            'status': experiment.state,
+            'status_display': experiment.get_state_display(),
             'error_message': experiment.error_message,
         }
         
@@ -114,7 +117,7 @@ def get_experiment_status_view(request, experiment_id):
                 data['progress'] = task_result.info
         
         # Include result info if experiment is completed
-        if experiment.status == 'COMPLETED':
+        if experiment.state == 'COMPLETED':
             try:
                 result = experiment.result
                 data['result'] = {
@@ -139,7 +142,7 @@ def result_view(request, experiment_id):
     """
     experiment = get_object_or_404(Experiment, id=experiment_id)
     
-    if experiment.status != 'COMPLETED':
+    if experiment.state != 'COMPLETED':
         return redirect('experiment_monitoring', experiment_id=experiment.id)
     
     try:
@@ -166,6 +169,6 @@ def create_project_view(request):
             description=description
         )
         
-        return redirect('project_detail', project_id=project.id)
+        return redirect('project_detail_view', project_id=project.id)
     
     return render(request, 'core/create_project.html')

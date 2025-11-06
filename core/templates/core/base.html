@@ -12,16 +12,33 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     
     <style>
+        html, body {
+            height: 100%;          /* Body ocupa toda la ventana */
+            margin: 0;             /* Quita márgenes por defecto */
+        }
+
         body {
-            padding-top: 60px;
+            display: flex;
+            flex-direction: column; /* Organiza el body en columna */
+            padding-top: 60px;      /* tu navbar fixed */
             background-color: #f8f9fa;
         }
-        
+
+        .container {
+            flex: 1; /* El contenido principal ocupa todo el espacio disponible */
+        }
+
+        .footer {
+            padding: 20px 0;
+            background-color: #343a40;
+            color: white;
+            text-align: center;
+        }  
         .navbar-brand {
             font-weight: bold;
             font-size: 1.5rem;
         }
-        
+
         .card {
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             margin-bottom: 20px;
@@ -30,14 +47,6 @@
         .badge-status {
             font-size: 0.9rem;
             padding: 5px 10px;
-        }
-        
-        .footer {
-            margin-top: 50px;
-            padding: 20px 0;
-            background-color: #343a40;
-            color: white;
-            text-align: center;
         }
     </style>
     
